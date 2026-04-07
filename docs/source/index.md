@@ -467,6 +467,7 @@ checks
 dtypes
 lazy_validation
 error_report
+cli_guide
 ```
 
 ```{toctree}
