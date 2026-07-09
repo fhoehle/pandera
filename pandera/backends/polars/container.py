@@ -305,7 +305,7 @@ class DataFrameSchemaBackend(PolarsSchemaBackend):
         for col_name, col in columns.items():
             if (
                 col.required  # type: ignore
-                or col_name in check_obj.collect_schema().names()
+                or col_name in get_lazyframe_column_names(check_obj)
                 or (
                     column_info.regex_match_patterns is not None
                     and col.selector in column_info.regex_match_patterns
@@ -374,7 +374,7 @@ class DataFrameSchemaBackend(PolarsSchemaBackend):
         # Get columns present in df but not in schema
         cols_not_in_schema = [
             col
-            for col in check_obj.collect_schema().names()
+            for col in get_lazyframe_column_names(check_obj)
             if col not in schema.columns
         ]
 

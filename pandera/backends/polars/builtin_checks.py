@@ -1,5 +1,6 @@
 """Built-in checks for polars."""
 
+import decimal
 import re
 from collections.abc import Collection, Iterable
 from typing import Any, TypeVar, Union
@@ -8,8 +9,22 @@ import polars as pl
 
 from pandera.api.extensions import register_builtin_check
 from pandera.api.polars.types import PolarsData
+from pandera.api.polars.utils import get_lazyframe_schema
 
 T = TypeVar("T")
+
+
+def _to_comparable(data: PolarsData, value: Any) -> Any:
+    """Coerce ``value`` into something Polars can turn into a literal.
+
+    Older Polars releases (<1.0) cannot build an expression literal directly
+    from a :class:`decimal.Decimal`, so cast it to the column's own dtype
+    via a string literal instead.
+    """
+    if isinstance(value, decimal.Decimal):
+        dtype = get_lazyframe_schema(data.lazyframe)[data.key]
+        return pl.lit(str(value)).cast(dtype)
+    return value
 
 
 @register_builtin_check(
@@ -24,7 +39,9 @@ def equal_to(data: PolarsData, value: Any) -> pl.LazyFrame:
     :param value: Values in this Polars data structure must be
         equal to this value.
     """
-    return data.lazyframe.select(pl.col(data.key).eq(value))
+    return data.lazyframe.select(
+        pl.col(data.key).eq(_to_comparable(data, value))
+    )
 
 
 @register_builtin_check(
@@ -38,7 +55,9 @@ def not_equal_to(data: PolarsData, value: Any) -> pl.LazyFrame:
         to access the dataframe is "dataframe", and the key the to access the column name is "key".
     :param value: This value must not occur in the checked data structure.
     """
-    return data.lazyframe.select(pl.col(data.key).ne(value))
+    return data.lazyframe.select(
+        pl.col(data.key).ne(_to_comparable(data, value))
+    )
 
 
 @register_builtin_check(
@@ -55,7 +74,9 @@ def greater_than(data: PolarsData, min_value: Any) -> pl.LazyFrame:
     :param min_value: Lower bound to be exceeded. Must be
         a type comparable to the dtype of the series datatype of Polars.
     """
-    return data.lazyframe.select(pl.col(data.key).gt(min_value))
+    return data.lazyframe.select(
+        pl.col(data.key).gt(_to_comparable(data, min_value))
+    )
 
 
 @register_builtin_check(
@@ -70,7 +91,9 @@ def greater_than_or_equal_to(data: PolarsData, min_value: Any) -> pl.LazyFrame:
     :param min_value: Allowed minimum value. Must be a type comparable
         to the dtype of the :class:`pl.Series` to be validated.
     """
-    return data.lazyframe.select(pl.col(data.key).ge(min_value))
+    return data.lazyframe.select(
+        pl.col(data.key).ge(_to_comparable(data, min_value))
+    )
 
 
 @register_builtin_check(
@@ -86,7 +109,9 @@ def less_than(data: PolarsData, max_value: Any) -> pl.LazyFrame:
         than this. Must be a type comparable to the dtype of the
         :class:`pl.Series` to be validated.
     """
-    return data.lazyframe.select(pl.col(data.key).lt(max_value))
+    return data.lazyframe.select(
+        pl.col(data.key).lt(_to_comparable(data, max_value))
+    )
 
 
 @register_builtin_check(
@@ -101,7 +126,9 @@ def less_than_or_equal_to(data: PolarsData, max_value: Any) -> pl.LazyFrame:
     :param max_value: Upper bound not to be exceeded. Must be a type comparable to the dtype of the
         :class:`pl.Series` to be validated.
     """
-    return data.lazyframe.select(pl.col(data.key).le(max_value))
+    return data.lazyframe.select(
+        pl.col(data.key).le(_to_comparable(data, max_value))
+    )
 
 
 @register_builtin_check(
@@ -133,6 +160,8 @@ def in_range(
         max_value.
     """
     col = pl.col(data.key)
+    min_value = _to_comparable(data, min_value)
+    max_value = _to_comparable(data, max_value)
     compare_min = col.ge(min_value) if include_min else col.gt(min_value)
     compare_max = col.le(max_value) if include_max else col.lt(max_value)
 
@@ -296,6 +325,8 @@ def unique_values_eq(data: PolarsData, values: Iterable) -> bool:
     :param values: The set of values that must be present. May be any iterable.
     """
 
+    # Use to_list() rather than Series.unique(), since older Polars releases
+    # (<1.0) don't support `unique` on Decimal-typed columns.
     return (
-        set(data.lazyframe.collect().get_column(data.key).unique()) == values
+        set(data.lazyframe.collect().get_column(data.key).to_list()) == values
     )
