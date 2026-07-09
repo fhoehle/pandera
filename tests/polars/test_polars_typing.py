@@ -435,12 +435,12 @@ class TestDataFrame:
         # Test a successful case
 
         buffer = io.StringIO()
-        if polars_version().release < (1, 0, 0):
+        if polars_version().release < (1, 7, 0):
             buffer = io.BytesIO()
         df.write_csv(buffer)
         buffer.seek(0)
         result = buffer.getvalue()
-        if polars_version().release < (1, 0, 0):
+        if polars_version().release < (1, 7, 0):
             result = result.decode("utf-8")
 
         assert "str_col,int_col" in result
