@@ -15,12 +15,13 @@ from pandera import Check as C
 from pandera.api.polars.types import PolarsData
 from pandera.api.polars.utils import get_lazyframe_column_names
 from pandera.engines import polars_engine as pe
+from pandera.engines.polars_engine import polars_version
 from pandera.polars import Column, DataFrameModel, DataFrameSchema
 
-try:
-    from polars._typing import PolarsDataType  # type: ignore
-except NameError:
-    from polars.type_aliases import PolarsDataType  # type: ignore
+if polars_version().release < (1, 0, 0):
+    from polars.type_aliases import PolarsDataType
+else:
+    from polars._typing import PolarsDataType
 
 from pandera.config import CONFIG
 

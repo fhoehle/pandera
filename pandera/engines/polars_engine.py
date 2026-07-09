@@ -20,7 +20,6 @@ from typing import (
 
 import polars as pl
 from packaging import version
-from polars._typing import ColumnNameOrSelector, PythonDataType
 from polars.datatypes import DataTypeClass
 from pydantic import BaseModel, ValidationError
 from typing_extensions import NotRequired
@@ -50,6 +49,12 @@ def polars_version() -> version.Version:
     """Return the polars version."""
 
     return version.parse(pl.__version__)
+
+
+if polars_version().release < (1, 0, 0):
+    from polars.type_aliases import ColumnNameOrSelector, PythonDataType
+else:
+    from polars._typing import ColumnNameOrSelector, PythonDataType
 
 
 def convert_py_dtype_to_polars_dtype(dtype):
@@ -936,7 +941,9 @@ class PydanticModel(DataType):
         data_container: pl.LazyFrame,
         column_names: list[str],
     ) -> None:
-        lf_columns = data_container.collect_schema().names()
+        from pandera.api.polars.utils import get_lazyframe_column_names
+
+        lf_columns = get_lazyframe_column_names(data_container)
         absent_columns = [col for col in column_names if col not in lf_columns]
 
         if absent_columns:

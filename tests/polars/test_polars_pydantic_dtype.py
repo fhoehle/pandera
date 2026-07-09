@@ -5,7 +5,12 @@ import pytest
 from pydantic import BaseModel
 
 import pandera.polars as pa
-from pandera.engines.polars_engine import PydanticModel
+from pandera.engines.polars_engine import PydanticModel, polars_version
+
+if polars_version().release < (1, 0, 0):
+    from polars.datatypes import Utf8 as pl_String
+else:
+    from polars import String as pl_String
 
 
 class Record(BaseModel):
@@ -141,7 +146,7 @@ def test_pydantic_model_empty_via_model():
     result = MySchema.empty()
     assert isinstance(result, pl.DataFrame)
     assert result.shape[0] == 0
-    assert result.schema == {"name": pl.String, "value": pl.Int64}
+    assert result.schema == {"name": pl_String, "value": pl.Int64}
 
 
 def test_pydantic_model_get_polars_schema_unsupported_type():
@@ -202,7 +207,7 @@ def test_pydantic_model_get_polars_schema_v1_fallback():
     object.__setattr__(pm, "type", fake_model)
 
     schema = pm._get_polars_schema()
-    assert schema == {"name": pl.String}
+    assert schema == {"name": pl_String}
 
 
 @pytest.mark.parametrize("coerce", [True, False])
