@@ -337,9 +337,20 @@ jobs:
         - xarray
         include:
         - extra: polars
+          python-version: "3.10"
           polars-version: "0.20.0"
         - extra: polars
+          python-version: "3.11"
+          polars-version: "0.20.0"
+        - extra: polars
+          python-version: "3.12"
           polars-version: "1.33.1"
+        - extra: polars
+          python-version: "3.13"
+          polars-version: "1.33.1"
+        - extra: polars
+          python-version: "3.14"
+          polars-version: "1.42.0"
         - extra: polars
           pydantic-version: "2.12.3"
         exclude:
