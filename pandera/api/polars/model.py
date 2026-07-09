@@ -19,10 +19,16 @@ from pandera.api.polars.container import DataFrameSchema
 from pandera.api.polars.model_config import BaseConfig
 from pandera.api.polars.types import PolarsFrame
 from pandera.engines import polars_engine as pe
+from pandera.engines.polars_engine import polars_version
 from pandera.errors import SchemaInitError
 from pandera.typing import AnnotationInfo
 from pandera.typing.polars import DataFrame, LazyFrame, Series
 from pandera.utils import docstring_substitution
+
+if polars_version().release < (1, 0, 0):
+    from polars.datatypes import Utf8 as pl_String
+else:
+    from polars import String as pl_String
 
 
 class DataFrameModel(_DataFrameModel[pl.LazyFrame, DataFrameSchema]):
@@ -200,7 +206,7 @@ class DataFrameModel(_DataFrameModel[pl.LazyFrame, DataFrameSchema]):
             pl.Boolean: "boolean",
             # String types
             pl.Utf8: "string",
-            pl.String: "string",
+            pl_String: "string",
             # Date/Time types
             pl.Date: "datetime",
             pl.Datetime: "datetime",

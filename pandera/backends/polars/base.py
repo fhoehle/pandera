@@ -14,12 +14,18 @@ from pandera.api.polars.utils import (
 )
 from pandera.backends.base import BaseSchemaBackend, CoreCheckResult
 from pandera.constants import CHECK_OUTPUT_KEY
+from pandera.engines.polars_engine import polars_version
 from pandera.errors import (
     FailureCaseMetadata,
     SchemaError,
     SchemaErrorReason,
     SchemaWarning,
 )
+
+if polars_version().release < (1, 0, 0):
+    from polars.datatypes import Utf8 as pl_String
+else:
+    from polars import String as pl_String
 
 
 def is_float_dtype(check_obj: pl.LazyFrame, selector):
@@ -215,7 +221,7 @@ class PolarsSchemaBackend(BaseSchemaBackend):
                 ).cast(
                     {
                         "failure_case": pl.Utf8,
-                        "column": pl.String,
+                        "column": pl_String,
                         "index": pl.Int32,
                         "check_number": pl.Int32,
                     }
@@ -234,7 +240,7 @@ class PolarsSchemaBackend(BaseSchemaBackend):
                 failure_cases_df = pl.DataFrame(scalar_failure_cases).cast(
                     {
                         "check_number": pl.Int32,
-                        "column": pl.String,
+                        "column": pl_String,
                         "index": pl.Int32,
                     }
                 )

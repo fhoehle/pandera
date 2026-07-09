@@ -18,7 +18,10 @@ from pandera.api.polars.types import PolarsData
 from pandera.api.polars.utils import get_lazyframe_column_dtypes
 from pandera.constants import CHECK_OUTPUT_KEY
 from pandera.engines import polars_engine as pe
-from pandera.engines.polars_engine import polars_object_coercible
+from pandera.engines.polars_engine import (
+    polars_object_coercible,
+    polars_version,
+)
 
 POLARS_NUMERIC_DTYPES = [
     pl.Int8,
@@ -62,6 +65,8 @@ special_types = [
 ]
 
 all_types = numeric_dtypes + temporal_types + other_types
+
+pl_decimal_precision = polars_version().release >= (1, 34, 0) and 38 or 28
 
 
 def get_dataframe_strategy(type_: pl.DataType) -> st.SearchStrategy:
@@ -335,7 +340,7 @@ def test_polars_object_coercible(to_dtype, container, result):
     "polars_dtype, expected_dtype",
     [
         (pl.Decimal(5, 2), pe.Decimal(5, 2)),
-        (pl.Decimal(None, 2), pe.Decimal(38, 2)),
+        (pl.Decimal(None, 2), pe.Decimal(pl_decimal_precision, 2)),
     ],
 )
 def test_polars_decimal_from_parametrized_dtype(polars_dtype, expected_dtype):
