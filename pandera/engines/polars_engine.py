@@ -23,7 +23,7 @@ from packaging import version
 from polars.datatypes import DataTypeClass
 from polars.datatypes._parse import parse_py_type_into_dtype
 from pydantic import BaseModel, ValidationError
-from typing_extensions import NotRequired
+from typing_extensions import NotRequired, deprecated
 
 from pandera import dtypes, errors
 from pandera.api.polars.types import PolarsData
@@ -600,12 +600,24 @@ class Array(DataType):
     ) -> None: ...
 
     @overload
+    @deprecated(
+        "The `width` argument of `Array` is deprecated, use `shape` instead."
+    )
     def __init__(
         self,
         inner: PolarsDataType = ...,
         shape: Union[int, tuple[int, ...], None] = ...,
         *,
-        width: int | None = ...,
+        width: int,
+    ) -> None: ...
+
+    @overload
+    def __init__(
+        self,
+        inner: PolarsDataType = ...,
+        shape: Union[int, tuple[int, ...], None] = ...,
+        *,
+        width: None = ...,
     ) -> None: ...
 
     def __init__(
@@ -615,9 +627,19 @@ class Array(DataType):
         *,
         width: int | None = None,
     ) -> None:
+        """Construct a Polars Array dtype.
+
+        .. deprecated::
+          The ``width`` argument is deprecated, use ``shape`` instead.
+        """
         kwargs: _ArrayKwargs = {}
         if width is not None:
-            # width deprecated in polars 0.20.31, replaced by shape
+            warnings.warn(
+                "The `width` argument of `Array` is deprecated and will be "
+                "removed in a future version. Use `shape` instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
             kwargs["shape"] = width
         elif shape is not None:
             kwargs["shape"] = shape

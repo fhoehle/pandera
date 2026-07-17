@@ -862,7 +862,7 @@ def test_dataframe_schema_with_kwargs_nested_types(lf_with_nested_types):
     class ModelWithDtypeKwargs(DataFrameModel):
         list_col: pl.List = pa.Field(dtype_kwargs={"inner": pl.Int64()})
         array_col: pl.Array = pa.Field(
-            dtype_kwargs={"inner": pl.Int64(), "shape": 3, "width": None}
+            dtype_kwargs={"inner": pl.Int64(), "shape": 3}
         )
         struct_col: pl.Struct = pa.Field(
             dtype_kwargs={"fields": {"a": pl.Utf8(), "b": pl.Float64()}}
