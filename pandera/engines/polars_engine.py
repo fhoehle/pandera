@@ -21,6 +21,7 @@ from typing import (
 import polars as pl
 from packaging import version
 from polars.datatypes import DataTypeClass
+from polars.datatypes._parse import parse_py_type_into_dtype
 from pydantic import BaseModel, ValidationError
 from typing_extensions import NotRequired
 
@@ -51,26 +52,14 @@ def polars_version() -> version.Version:
     return version.parse(pl.__version__)
 
 
-if polars_version().release < (1, 0, 0):
-    from polars.type_aliases import ColumnNameOrSelector, PythonDataType
-else:
-    from polars._typing import ColumnNameOrSelector, PythonDataType
+from polars._typing import ColumnNameOrSelector, PythonDataType
 
 
 def convert_py_dtype_to_polars_dtype(dtype):
     if isinstance(dtype, DataTypeClass):
         return dtype
 
-    if polars_version().release < (1, 0, 0):
-        from polars.datatypes import py_type_to_dtype
-
-        conversion_fn = py_type_to_dtype
-    else:
-        from polars.datatypes._parse import parse_py_type_into_dtype
-
-        conversion_fn = parse_py_type_into_dtype
-
-    return conversion_fn(dtype)
+    return parse_py_type_into_dtype(dtype)
 
 
 def polars_object_coercible(
@@ -199,8 +188,6 @@ class DataType(dtypes.DataType):
         raises a :class:`~pandera.errors.ParserError` if the coercion fails
         :raises: :class:`~pandera.errors.ParserError`: if coercion fails
         """
-        from pandera.api.polars.utils import get_lazyframe_schema
-
         if isinstance(data_container, pl.LazyFrame):
             data_container = PolarsData(data_container)
 
@@ -221,7 +208,7 @@ class DataType(dtypes.DataType):
                 failure_cases = failure_cases.select(data_container.key)
             raise errors.ParserError(
                 f"Could not coerce {_key} LazyFrame with schema "
-                f"{get_lazyframe_schema(data_container.lazyframe)} "
+                f"{data_container.lazyframe.collect_schema()} "
                 f"into type {self.type}",
                 failure_cases=failure_cases,
                 parser_output=is_coercible,
@@ -941,9 +928,7 @@ class PydanticModel(DataType):
         data_container: pl.LazyFrame,
         column_names: list[str],
     ) -> None:
-        from pandera.api.polars.utils import get_lazyframe_column_names
-
-        lf_columns = get_lazyframe_column_names(data_container)
+        lf_columns = data_container.collect_schema().names()
         absent_columns = [col for col in column_names if col not in lf_columns]
 
         if absent_columns:

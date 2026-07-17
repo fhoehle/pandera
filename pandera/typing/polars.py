@@ -26,11 +26,6 @@ if PYDANTIC_V2:
     from pydantic_core import core_schema
 
 
-def polars_version():
-    """Return the polars version."""
-    return version.parse(pl.__version__)
-
-
 if TYPE_CHECKING:
     T = TypeVar("T")  # pragma: no cover
 else:

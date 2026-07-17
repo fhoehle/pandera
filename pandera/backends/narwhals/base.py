@@ -21,13 +21,6 @@ from pandera.errors import (
 
 try:
     import polars as pl  # noqa: F401  # used in eager/scalar failure_cases paths
-
-    from pandera.engines.polars_engine import polars_version
-
-    if polars_version().release < (1, 0, 0):
-        from polars.datatypes import Utf8 as pl_String
-    else:
-        from polars import String as pl_String
 except ImportError:  # pragma: no cover — polars is optional
     pl = None  # type: ignore[assignment]
 
@@ -445,7 +438,7 @@ class NarwhalsSchemaBackend(BaseSchemaBackend):
         ).cast(
             {
                 "failure_case": pl.Utf8,
-                "column": pl_String,
+                "column": pl.String,
                 "index": pl.Int32,
                 "check_number": pl.Int32,
             }
@@ -467,7 +460,7 @@ class NarwhalsSchemaBackend(BaseSchemaBackend):
         return pl.DataFrame(scalar_failure_cases).cast(
             {
                 "check_number": pl.Int32,
-                "column": pl_String,
+                "column": pl.String,
                 "index": pl.Int32,
             }
         )

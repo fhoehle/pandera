@@ -8,13 +8,8 @@ import polars as pl
 
 from pandera.api.base.error_handler import ErrorHandler
 from pandera.api.polars.types import CheckResult, PolarsFrame
-from pandera.api.polars.utils import (
-    get_lazyframe_column_dtypes,
-    get_lazyframe_schema,
-)
 from pandera.backends.base import BaseSchemaBackend, CoreCheckResult
 from pandera.constants import CHECK_OUTPUT_KEY
-from pandera.engines.polars_engine import polars_version
 from pandera.errors import (
     FailureCaseMetadata,
     SchemaError,
@@ -22,19 +17,14 @@ from pandera.errors import (
     SchemaWarning,
 )
 
-if polars_version().release < (1, 0, 0):
-    from polars.datatypes import Utf8 as pl_String
-else:
-    from polars import String as pl_String
-
 
 def is_float_dtype(check_obj: pl.LazyFrame, selector):
     """Check if a column/selector is a float."""
     return all(
         dtype in {pl.Float32, pl.Float64}
-        for dtype in get_lazyframe_column_dtypes(
-            check_obj.select(pl.col(selector))
-        )
+        for dtype in check_obj.select(pl.col(selector))
+        .collect_schema()
+        .dtypes()
     )
 
 
@@ -102,7 +92,7 @@ class PolarsSchemaBackend(BaseSchemaBackend):
             else:
                 # use check_result
                 _failure_cases = check_result.failure_cases
-                if CHECK_OUTPUT_KEY in get_lazyframe_schema(_failure_cases):
+                if CHECK_OUTPUT_KEY in _failure_cases.collect_schema():
                     _failure_cases = _failure_cases.drop(CHECK_OUTPUT_KEY)
 
                 failure_cases = _failure_cases.collect()
@@ -221,7 +211,7 @@ class PolarsSchemaBackend(BaseSchemaBackend):
                 ).cast(
                     {
                         "failure_case": pl.Utf8,
-                        "column": pl_String,
+                        "column": pl.String,
                         "index": pl.Int32,
                         "check_number": pl.Int32,
                     }
@@ -240,7 +230,7 @@ class PolarsSchemaBackend(BaseSchemaBackend):
                 failure_cases_df = pl.DataFrame(scalar_failure_cases).cast(
                     {
                         "check_number": pl.Int32,
-                        "column": pl_String,
+                        "column": pl.String,
                         "index": pl.Int32,
                     }
                 )

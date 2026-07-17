@@ -9,7 +9,6 @@ import polars as pl
 
 from pandera.api.extensions import register_builtin_check
 from pandera.api.polars.types import PolarsData
-from pandera.api.polars.utils import get_lazyframe_schema
 
 T = TypeVar("T")
 
@@ -22,7 +21,7 @@ def _to_comparable(data: PolarsData, value: Any) -> Any:
     via a string literal instead.
     """
     if isinstance(value, decimal.Decimal):
-        dtype = get_lazyframe_schema(data.lazyframe)[data.key]
+        dtype = data.lazyframe.collect_schema()[data.key]
         return pl.lit(str(value)).cast(dtype)
     return value
 

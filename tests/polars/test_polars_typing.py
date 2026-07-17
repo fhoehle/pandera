@@ -11,7 +11,7 @@ import pandera.polars as pa
 from pandera.engines import PYDANTIC_V2
 from pandera.errors import SchemaInitError
 from pandera.typing.formats import Formats
-from pandera.typing.polars import DataFrame, Series, polars_version
+from pandera.typing.polars import DataFrame, Series
 
 try:
     if PYDANTIC_V2:
@@ -21,13 +21,6 @@ try:
     PYDANTIC_INSTALLED = True
 except ImportError:
     PYDANTIC_INSTALLED = False
-
-
-def test_polars_version():
-    """Test the polars_version function."""
-    # We need to check equality as strings because Version objects don't compare
-    # directly to string versions
-    assert str(polars_version()) == pl.__version__
 
 
 def test_type_vars():
@@ -435,13 +428,9 @@ class TestDataFrame:
         # Test a successful case
 
         buffer = io.StringIO()
-        if polars_version().release < (1, 7, 0):
-            buffer = io.BytesIO()
         df.write_csv(buffer)
         buffer.seek(0)
         result = buffer.getvalue()
-        if polars_version().release < (1, 7, 0):
-            result = result.decode("utf-8")
 
         assert "str_col,int_col" in result
         assert "test,1" in result

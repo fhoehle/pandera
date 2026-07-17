@@ -6,15 +6,8 @@ import polars as pl
 import pytest
 
 import pandera.polars as pa
-from pandera.api.polars.utils import get_lazyframe_schema
 from pandera.config import CONFIG
 from pandera.constants import CHECK_OUTPUT_KEY
-from pandera.engines.polars_engine import polars_version
-
-if polars_version().release < (1, 0, 0):
-    from polars.datatypes import Utf8 as pl_String
-else:
-    from polars import String as pl_String
 
 
 @pytest.fixture
@@ -186,7 +179,7 @@ def test_polars_element_wise_dataframe_check(lf):
     validated_data = schema.validate(lf)
     assert validated_data.collect().equals(lf.collect())
 
-    for col in get_lazyframe_schema(lf):
+    for col in lf.collect_schema():
         invalid_lf = lf.with_columns(**{col: pl.Series([-1, 2, -4, 3])})
         try:
             schema.validate(invalid_lf)
@@ -304,7 +297,7 @@ def test_polars_dataframe_check_n_failure_cases(lf):
         (
             "List[str]",
             pl.Series([["gold", "magenta"], ["green"]]),
-            pl.List(pl_String),
+            pl.List(pl.String),
             '"magenta"',
         ),
         (
