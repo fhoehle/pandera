@@ -5,6 +5,7 @@ on:
       - main
       - dev
       - bugfix
+      - "bugfix/*"
       - "release/*"
       - "fix/**"
   pull_request:
