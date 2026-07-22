@@ -1,0 +1,54 @@
+name: macOS Runner Limits Diagnostic
+
+# Standalone diagnostic to compare thread / process / resource limits across
+# macOS runner images. Used to investigate the flaky pyspark JVM resource
+# exhaustion (see local-llm-topics/ci-spark-macos-issues.md): if an older image
+# (macos-14) has a higher thread/proc ceiling than macos-15, that isolates the
+# flake to a GitHub-side image change rather than any code in the repo.
+#
+# Run manually from the Actions tab (workflow_dispatch).
+
+on:
+  workflow_dispatch:
+
+jobs:
+  runner-limits:
+    name: Limits (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, macos-15, macos-14, macos-15-intel]
+    steps:
+      - name: OS and image version
+        run: |
+          echo "=== OS version ==="
+          sw_vers
+          echo "=== Runner image version ==="
+          echo "ImageOS=${ImageOS:-unknown} ImageVersion=${ImageVersion:-unknown}"
+          echo "arch=$(uname -m)"
+
+      - name: ulimit (soft and hard)
+        run: |
+          echo "=== ulimit -a (soft) ==="
+          ulimit -a
+          echo "=== ulimit -Ha (hard) ==="
+          ulimit -Ha
+          echo "=== key limits ==="
+          echo "max user processes/threads (soft): $(ulimit -u)"
+          echo "max user processes/threads (hard): $(ulimit -Hu)"
+          echo "open files (soft): $(ulimit -n)"
+          echo "open files (hard): $(ulimit -Hn)"
+
+      - name: kernel thread / process sysctls
+        run: |
+          echo "=== process/thread sysctls ==="
+          sysctl kern.maxproc kern.maxprocperuid kern.num_taskthreads kern.num_threads kern.maxfiles kern.maxfilesperproc
+
+      - name: cpu / memory
+        run: |
+          echo "=== hardware ==="
+          sysctl hw.ncpu hw.logicalcpu hw.physicalcpu hw.memsize
+          echo "=== current thread/process count ==="
+          echo "processes: $(ps -A | wc -l)"
+          echo "threads:   $(ps -M -A 2>/dev/null | wc -l)"
