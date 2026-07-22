@@ -343,14 +343,7 @@ jobs:
         pandas-version: ["2.3.3"]
         extra:
         - pyspark
-        exclude:
-        # pyspark is not supported on these Python versions in this repo
-        - extra: pyspark
-          python-version: "3.12"
-        - extra: pyspark
-          python-version: "3.13"
-        - extra: pyspark
-          python-version: "3.14"
+
 
     steps:
       - uses: actions/checkout@v4
